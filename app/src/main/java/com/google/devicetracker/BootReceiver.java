@@ -12,8 +12,8 @@ public class BootReceiver extends BroadcastReceiver
     @Override
     public void onReceive(Context context, Intent intent)
     {
-        if(ReuseableClass.getFromPreference("registration_screen_opened",context).equalsIgnoreCase("") ||
-                ReuseableClass.getFromPreference("registration_screen_opened",context).equalsIgnoreCase("NO"))
+        if(ReuseableClass.getFromPreference("registration_screen_opened", context).equalsIgnoreCase("") ||
+                ReuseableClass.getFromPreference("registration_screen_opened", context).equalsIgnoreCase("NO"))
         {
             ReuseableClass.saveInPreference("registration_screen_opened", "YES", context);
             Intent myIntent = new Intent(context, MainActivity.class);
