@@ -7,8 +7,8 @@
 
         <!-- Support library compatibility -->
         <item name="actionBarSize">45dip</item>
-        <item name="android:windowNoTitle">true</item>
-        <item name="android:windowFullscreen">true</item>
+        <!--<item name="android:windowNoTitle">true</item>-->
+        <!--<item name="android:windowFullscreen">true</item>-->
         <item name="actionBarStyle">@style/MyActionBar</item>
     </style>
 

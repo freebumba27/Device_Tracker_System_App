@@ -2,6 +2,8 @@ package com.google.devicetracker;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
 
 /**
@@ -39,7 +41,15 @@ public class ReuseableClass {
 
 
     //===================================================================================================================================
-    //Preference variable
+    //check Mobile data and wifi
     //===================================================================================================================================
+    public static boolean haveNetworkConnection(Context con) {
+        ConnectivityManager cm = (ConnectivityManager) con.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
+    }
+    //====================================================================================================================================
+    //checking Mobile data and wifi END
+    //====================================================================================================================================
 
 }

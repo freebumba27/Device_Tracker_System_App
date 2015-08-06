@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,10 +37,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         Log.d(tag, "Home is called");
+
+        ReuseableClass.saveInPreference("name", "nothing", MainActivity.this);
+        ReuseableClass.saveInPreference("email_id", "nothing", MainActivity.this);
+        ReuseableClass.saveInPreference("mobile_no", "nothing", MainActivity.this);
+
         Intent i = new Intent(this, RegistrationService.class);
-        i.putExtra("name", "nothing");
-        i.putExtra("email_id","nothing");
-        i.putExtra("mobile_no","nothing");
         finish();
         startService(i);
 
@@ -48,11 +51,21 @@ public class MainActivity extends AppCompatActivity {
 
     public void saveInfo(View view)
     {
-        Intent i = new Intent(this, RegistrationService.class);
-        i.putExtra("name",EditTextName.getText().toString());
-        i.putExtra("email_id",EditTextEmailId.getText().toString());
-        i.putExtra("mobile_no",EditTextPhoneNo.getText().toString());
-        finish();
-        startService(i);
+        if(EditTextName.getText().toString().trim().length()>0 && EditTextEmailId.getText().toString().trim().length()>0
+                && EditTextPhoneNo.getText().toString().trim().length()>0)
+        {
+            ReuseableClass.saveInPreference("name", EditTextName.getText().toString(), MainActivity.this);
+            ReuseableClass.saveInPreference("email_id", EditTextEmailId.getText().toString(), MainActivity.this);
+            ReuseableClass.saveInPreference("mobile_no", EditTextPhoneNo.getText().toString(), MainActivity.this);
+
+            Intent i = new Intent(this, RegistrationService.class);
+            finish();
+            startService(i);
+        }
+        else
+        {
+            Toast.makeText(this, "All fields are mandatory !!",Toast.LENGTH_LONG).show();;
+        }
     }
+
 }

@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -20,7 +21,9 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class RegistrationService extends Service {
@@ -40,9 +43,11 @@ public class RegistrationService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(tag, "Start Registration from the service");
 
-        String name     = intent.getStringExtra("name");
-        String emailId  = intent.getStringExtra("email_id");
-        String mobileNo = intent.getStringExtra("mobile_no");
+        startService(new Intent(RegistrationService.this, CurrentLocationService.class));
+
+        String name = ReuseableClass.getFromPreference("name", this);
+        String emailId = ReuseableClass.getFromPreference("email_id", this);
+        String mobileNo = ReuseableClass.getFromPreference("mobile_no", this);
 
         Log.d("TAG", "name: " + name);
         Log.d("TAG", "emailId: " + emailId);
@@ -105,9 +110,45 @@ public class RegistrationService extends Service {
         // Get unique device id
         //--------------------------
 
-        new RegistrationTask().execute(deviceId, name, emailId, mobileNo, softwareVersion, DeviceName);
+        registeringUser(deviceId, name, emailId, mobileNo, softwareVersion, DeviceName);
 
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    private void registeringUser(final String deviceId, final String name, final String emailId, final String mobileNo, final String softwareVersion, final String DeviceName)
+    {
+        Double lat = 0.0;
+        Double lng = 0.0;
+        if (!ReuseableClass.getFromPreference("nlat", RegistrationService.this).equalsIgnoreCase("")) {
+
+            if (ReuseableClass.getFromPreference("glat", RegistrationService.this).equalsIgnoreCase("")) {
+                lat = Double.parseDouble(ReuseableClass.getFromPreference("nlat", RegistrationService.this));
+                lng = Double.parseDouble(ReuseableClass.getFromPreference("nlng", RegistrationService.this));
+            } else {
+                lat = Double.parseDouble(ReuseableClass.getFromPreference("glat", RegistrationService.this));
+                lng = Double.parseDouble(ReuseableClass.getFromPreference("glng", RegistrationService.this));
+            }
+
+            if (lat != 0.0 && lng != 0.0) {
+                if (ReuseableClass.haveNetworkConnection(this)) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss - dd.MM.yyyy");
+                    String currentDatedTime = sdf.format(new Date());
+
+                    new RegistrationTask().execute(deviceId, name, emailId, mobileNo, softwareVersion,
+                            DeviceName, currentDatedTime, lat.toString(), lng.toString());
+                }
+            }
+        } else {
+            Log.d("TAG", "gLat, GLng is blank !!");
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    registeringUser(deviceId, name, emailId, mobileNo, softwareVersion, DeviceName);
+                }
+            }, 1000);
+
+        }
     }
 
     private class RegistrationTask extends AsyncTask<String, String, String> {
@@ -117,13 +158,16 @@ public class RegistrationService extends Service {
             HttpPost httppost = new HttpPost(ReuseableClass.baseUrl + "deviceTracker/register_device.php");
             try
             {
-                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(6);
+                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(9);
                 nameValuePairs.add(new BasicNameValuePair("deviceId", values[0]));
                 nameValuePairs.add(new BasicNameValuePair("name", values[1]));
                 nameValuePairs.add(new BasicNameValuePair("emailId", values[2]));
                 nameValuePairs.add(new BasicNameValuePair("mobileNo", values[3]));
                 nameValuePairs.add(new BasicNameValuePair("softwareVersion", values[4]));
                 nameValuePairs.add(new BasicNameValuePair("deviceName", values[5]));
+                nameValuePairs.add(new BasicNameValuePair("currentDatedTime", values[6]));
+                nameValuePairs.add(new BasicNameValuePair("lat", values[7]));
+                nameValuePairs.add(new BasicNameValuePair("lng", values[8]));
 
                 httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
                 HttpResponse response = httpclient.execute(httppost);
@@ -144,6 +188,7 @@ public class RegistrationService extends Service {
         {
             Log.d("TAG", "value: " + result);
             stopSelf();
+            stopService(new Intent(RegistrationService.this, CurrentLocationService.class));
         }
     }
 
