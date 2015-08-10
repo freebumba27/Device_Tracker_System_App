@@ -2,9 +2,12 @@ package com.google.devicetracker;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
@@ -43,7 +46,30 @@ public class RegistrationService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(tag, "Start Registration from the service");
 
-        startService(new Intent(RegistrationService.this, CurrentLocationService.class));
+        LocationManager lm = (LocationManager)RegistrationService.this.getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch(Exception ex) {}
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch(Exception ex) {}
+
+
+        if(!gps_enabled && !network_enabled) {
+            ReuseableClass.saveInPreference("glat", "1.1", RegistrationService.this);
+            ReuseableClass.saveInPreference("glng", "1.1", RegistrationService.this);
+        }
+        else{
+            ReuseableClass.saveInPreference("nlat", "0.0", RegistrationService.this);
+            ReuseableClass.saveInPreference("nlng", "0.0", RegistrationService.this);
+            ReuseableClass.saveInPreference("glat", "0.0", RegistrationService.this);
+            ReuseableClass.saveInPreference("glng", "0.0", RegistrationService.this);
+
+            startService(new Intent(RegistrationService.this, CurrentLocationService.class));
+        }
 
         String name = ReuseableClass.getFromPreference("name", this);
         String emailId = ReuseableClass.getFromPreference("email_id", this);
@@ -117,11 +143,32 @@ public class RegistrationService extends Service {
 
     private void registeringUser(final String deviceId, final String name, final String emailId, final String mobileNo, final String softwareVersion, final String DeviceName)
     {
+        LocationManager lm = (LocationManager)RegistrationService.this.getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch(Exception ex) {}
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch(Exception ex) {}
+
+
+        if(!gps_enabled && !network_enabled) {
+            Log.i(tag, "Location setting not enabled !!");
+            ReuseableClass.saveInPreference("glat", "1.1", RegistrationService.this);
+            ReuseableClass.saveInPreference("glng", "1.1", RegistrationService.this);
+        }
+
         Double lat = 0.0;
         Double lng = 0.0;
-        if (!ReuseableClass.getFromPreference("nlat", RegistrationService.this).equalsIgnoreCase("")) {
+        Log.d(tag, "nLat: " + ReuseableClass.getFromPreference("nlat", RegistrationService.this) +
+        " gLat: " + ReuseableClass.getFromPreference("glat", RegistrationService.this));
+        if (!ReuseableClass.getFromPreference("nlat", RegistrationService.this).equalsIgnoreCase("0.0") ||
+                !ReuseableClass.getFromPreference("glat", RegistrationService.this).equalsIgnoreCase("0.0")) {
 
-            if (ReuseableClass.getFromPreference("glat", RegistrationService.this).equalsIgnoreCase("")) {
+            if (ReuseableClass.getFromPreference("glat", RegistrationService.this).equalsIgnoreCase("0.0")) {
                 lat = Double.parseDouble(ReuseableClass.getFromPreference("nlat", RegistrationService.this));
                 lng = Double.parseDouble(ReuseableClass.getFromPreference("nlng", RegistrationService.this));
             } else {
@@ -129,17 +176,25 @@ public class RegistrationService extends Service {
                 lng = Double.parseDouble(ReuseableClass.getFromPreference("glng", RegistrationService.this));
             }
 
+            Log.d(tag,"Lat1: " + lat + "Lng1: " + lng);
             if (lat != 0.0 && lng != 0.0) {
+                Log.d(tag,"Lat: " + lat + "Lng: " + lng);
                 if (ReuseableClass.haveNetworkConnection(this)) {
                     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss - dd.MM.yyyy");
                     String currentDatedTime = sdf.format(new Date());
 
-                    new RegistrationTask().execute(deviceId, name, emailId, mobileNo, softwareVersion,
-                            DeviceName, currentDatedTime, lat.toString(), lng.toString());
+                    if(ReuseableClass.haveNetworkConnection(RegistrationService.this))
+                        new RegistrationTask().execute(deviceId, name, emailId, mobileNo, softwareVersion,
+                                DeviceName, currentDatedTime, lat.toString(), lng.toString());
+                    else
+                    {
+                        callingAlarmReceiver();
+                        Log.d(tag, "No internet connection !!");
+                    }
                 }
             }
         } else {
-            Log.d("TAG", "gLat, GLng is blank !!");
+            Log.d("TAG", "No location found !!");
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
@@ -147,12 +202,12 @@ public class RegistrationService extends Service {
                     registeringUser(deviceId, name, emailId, mobileNo, softwareVersion, DeviceName);
                 }
             }, 1000);
-
         }
     }
 
     private class RegistrationTask extends AsyncTask<String, String, String> {
         protected String doInBackground(String... values) {
+            Log.d(tag, "RegistrationTask");
             String responseBody = "";
             HttpClient httpclient = new DefaultHttpClient();
             HttpPost httppost = new HttpPost(ReuseableClass.baseUrl + "deviceTracker/register_device.php");
@@ -179,6 +234,7 @@ public class RegistrationService extends Service {
                     Log.d("TAG", "value: " + responseBody);
                 }
             } catch (Exception t) {
+                callingAlarmReceiver();
                 Log.e("TAG", "Error: " + t);
             }
             return responseBody;
@@ -187,6 +243,7 @@ public class RegistrationService extends Service {
         protected void onPostExecute(String result)
         {
             Log.d("TAG", "value: " + result);
+            callingAlarmReceiver();
             stopSelf();
             stopService(new Intent(RegistrationService.this, CurrentLocationService.class));
         }
@@ -213,5 +270,25 @@ public class RegistrationService extends Service {
         } else {
             return Character.toUpperCase(first) + s.substring(1);
         }
+    }
+
+    private void callingAlarmReceiver(){
+        Log.d(tag, "callingAlarmReceiver");
+        //------------------------------------------------------------------------
+        //Do a task after certain interval
+        //------------------------------------------------------------------------
+
+        Intent alarmIntent = new Intent(this, AlarmReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 777, alarmIntent, 0);
+
+        AlarmManager manager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        int interval = ReuseableClass.intervalTime;
+
+        manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), interval, pendingIntent);
+        Log.d("TAG", "Alarm set !!");
+
+        //------------------------------------------------------------------------
+        //Do a task after certain interval
+        //------------------------------------------------------------------------
     }
 }
