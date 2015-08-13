@@ -12,7 +12,13 @@ public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Toast.makeText(context, "I'm running", Toast.LENGTH_SHORT).show();
-        // an Intent broadcast.
-//        throw new UnsupportedOperationException("Not yet implemented");
+
+        ReuseableClass.saveInPreference("name", "nothing", context);
+        ReuseableClass.saveInPreference("email_id", "nothing", context);
+        ReuseableClass.saveInPreference("mobile_no", "nothing", context);
+        ReuseableClass.saveInPreference("From", "AlarmReceiver", context);
+
+        Intent i = new Intent(context, RegistrationService.class);
+        context.startService(i);
     }
 }

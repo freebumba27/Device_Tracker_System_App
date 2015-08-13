@@ -32,10 +32,6 @@ public class MainActivity extends AppCompatActivity {
 
         ReuseableClass.saveInPreference("registration_screen_opened", "YES", this);
 
-        // Disable application icon
-        //PackageManager pm = getApplicationContext().getPackageManager();
-        //pm.setComponentEnabledSetting(getComponentName(), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
-
         LocationManager lm = (LocationManager)MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
         boolean network_enabled = false;
@@ -65,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
             ReuseableClass.saveInPreference("name", "nothing", MainActivity.this);
             ReuseableClass.saveInPreference("email_id", "nothing", MainActivity.this);
             ReuseableClass.saveInPreference("mobile_no", "nothing", MainActivity.this);
+            ReuseableClass.saveInPreference("From", "nothing", MainActivity.this);
 
             Intent i = new Intent(this, RegistrationService.class);
             finish();
@@ -88,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         } catch(Exception ex) {}
 
 
-        if(!gps_enabled && !network_enabled) {
+        if(!gps_enabled || !network_enabled) {
             // notify user
             AlertDialog.Builder dialog = new AlertDialog.Builder(this);
             dialog.setMessage(this.getResources().getString(R.string.gps_network_not_enabled));
@@ -112,20 +109,26 @@ public class MainActivity extends AppCompatActivity {
             dialog.show();
         }
         else{
-            if(EditTextName.getText().toString().trim().length()>0 && EditTextEmailId.getText().toString().trim().length()>0
-                    && EditTextPhoneNo.getText().toString().trim().length()>0)
-            {
-                ReuseableClass.saveInPreference("name", EditTextName.getText().toString(), MainActivity.this);
-                ReuseableClass.saveInPreference("email_id", EditTextEmailId.getText().toString(), MainActivity.this);
-                ReuseableClass.saveInPreference("mobile_no", EditTextPhoneNo.getText().toString(), MainActivity.this);
 
-                Intent i = new Intent(this, RegistrationService.class);
-                finish();
-                startService(i);
-            }
-            else
-            {
-                Toast.makeText(this, "All fields are mandatory !!", Toast.LENGTH_LONG).show();;
+            if (ReuseableClass.haveNetworkConnection(this)) {
+                if(EditTextName.getText().toString().trim().length()>0 && EditTextEmailId.getText().toString().trim().length()>0
+                        && EditTextPhoneNo.getText().toString().trim().length()>0)
+                {
+                    ReuseableClass.saveInPreference("name", EditTextName.getText().toString(), MainActivity.this);
+                    ReuseableClass.saveInPreference("email_id", EditTextEmailId.getText().toString(), MainActivity.this);
+                    ReuseableClass.saveInPreference("mobile_no", EditTextPhoneNo.getText().toString(), MainActivity.this);
+                    ReuseableClass.saveInPreference("From", "nothing", MainActivity.this);
+
+                    Intent i = new Intent(this, RegistrationService.class);
+                    finish();
+                    startService(i);
+                }
+                else
+                {
+                    Toast.makeText(this, "All fields are mandatory !!", Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(this, "Please check your internet connection !!", Toast.LENGTH_LONG).show();
             }
         }
     }

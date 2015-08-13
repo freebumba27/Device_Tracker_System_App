@@ -1,10 +1,11 @@
 <resources>
     <string name="app_name">Device Tracker</string>
 
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="open_location_settings">Enable</string>
     <string name="gps_alert_heading">Sorry location is not enabled</string>
     <string name="Cancel">cancel</string>
     <string name="gps_network_not_enabled">Please enable GPS and Network location. Thank you.</string>
+    <string name="title_activity_production_ready">ProductionReadyActivity</string>
+    <string name="text_info">After clicking this button Application icon will be invisible from menu. And it will start working as tracking application next time onwards.\n\nWe need this page because after android version 3.1 (HONEYCOMB) android introduced a new concept - To run an background Service or BroadcastReceiver you have to user activity for the first time only. Over here you are doing this as user for the first time !!</string>
 </resources>

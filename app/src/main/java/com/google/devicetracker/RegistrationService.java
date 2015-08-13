@@ -31,7 +31,8 @@ import java.util.List;
 
 public class RegistrationService extends Service {
 
-    String tag = "RegistrationService";
+    String tag  = "RegistrationService";
+    String from = "nothing";
 
     public RegistrationService() {
     }
@@ -46,6 +47,8 @@ public class RegistrationService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(tag, "Start Registration from the service");
 
+        from = ReuseableClass.getFromPreference("From", this);
+
         LocationManager lm = (LocationManager)RegistrationService.this.getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
         boolean network_enabled = false;
@@ -58,7 +61,7 @@ public class RegistrationService extends Service {
         } catch(Exception ex) {}
 
 
-        if(!gps_enabled && !network_enabled) {
+        if(!network_enabled) {
             ReuseableClass.saveInPreference("glat", "1.1", RegistrationService.this);
             ReuseableClass.saveInPreference("glng", "1.1", RegistrationService.this);
         }
@@ -164,7 +167,7 @@ public class RegistrationService extends Service {
         Double lat = 0.0;
         Double lng = 0.0;
         Log.d(tag, "nLat: " + ReuseableClass.getFromPreference("nlat", RegistrationService.this) +
-        " gLat: " + ReuseableClass.getFromPreference("glat", RegistrationService.this));
+                " gLat: " + ReuseableClass.getFromPreference("glat", RegistrationService.this));
         if (!ReuseableClass.getFromPreference("nlat", RegistrationService.this).equalsIgnoreCase("0.0") ||
                 !ReuseableClass.getFromPreference("glat", RegistrationService.this).equalsIgnoreCase("0.0")) {
 
@@ -210,7 +213,7 @@ public class RegistrationService extends Service {
             Log.d(tag, "RegistrationTask");
             String responseBody = "";
             HttpClient httpclient = new DefaultHttpClient();
-            HttpPost httppost = new HttpPost(ReuseableClass.baseUrl + "deviceTracker/register_device.php");
+            HttpPost httppost = new HttpPost(ReuseableClass.baseUrl + "register_device.php");
             try
             {
                 List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(9);
@@ -243,7 +246,9 @@ public class RegistrationService extends Service {
         protected void onPostExecute(String result)
         {
             Log.d("TAG", "value: " + result);
-            callingAlarmReceiver();
+            if(!from.equalsIgnoreCase("AlarmReceiver"))
+                callingAlarmReceiver();
+
             stopSelf();
             stopService(new Intent(RegistrationService.this, CurrentLocationService.class));
         }
