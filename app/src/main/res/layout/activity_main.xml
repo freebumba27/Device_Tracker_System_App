@@ -107,7 +107,7 @@
                 android:background="@android:color/transparent"
                 android:hint="Phone No"
                 android:inputType="phone"
-                android:maxLength="10"
+                android:maxLength="11"
                 android:paddingLeft="5dp"
                 android:paddingRight="5dp" />
         </LinearLayout>

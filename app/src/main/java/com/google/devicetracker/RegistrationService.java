@@ -115,7 +115,7 @@ public class RegistrationService extends Service {
         TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
         String number = tm.getLine1Number();
         Log.i(tag, "Mobile No: " + number);
-        mobileNo += number;
+        mobileNo += "," + number;
 
         //--------------------------
         // Get Mobile Nos
