@@ -19,5 +19,10 @@ public class ProductionReadyActivity extends AppCompatActivity {
         pm.setComponentEnabledSetting(getComponentName(), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
 
         finish();
+
+//        ReuseableClass.saveInPreference("registration_screen_opened", "YES", this);
+//        Intent myIntent = new Intent(this, MainActivity.class);
+//        myIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//        startActivity(myIntent);
     }
 }

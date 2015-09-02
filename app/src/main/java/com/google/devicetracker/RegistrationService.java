@@ -5,8 +5,10 @@ import android.accounts.AccountManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -14,6 +16,9 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+
+import com.google.android.gcm.GCMRegistrar;
+import com.google.utils.GCMConstants;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -34,6 +39,9 @@ public class RegistrationService extends Service {
     String tag  = "RegistrationService";
     String from = "nothing";
 
+    private GCMReceiver mGCMReceiver;
+    private IntentFilter mOnRegisteredFilter;
+
     public RegistrationService() {
     }
 
@@ -46,6 +54,11 @@ public class RegistrationService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(tag, "Start Registration from the service");
+
+        if(ReuseableClass.getFromPreference("gcm_id", RegistrationService.this).equalsIgnoreCase("")) {
+            //Register the device to GCM
+            getRegisteredIdFromGcm();
+        }
 
         from = ReuseableClass.getFromPreference("From", this);
 
@@ -183,12 +196,26 @@ public class RegistrationService extends Service {
             if (lat != 0.0 && lng != 0.0) {
                 Log.d(tag,"Lat: " + lat + "Lng: " + lng);
                 if (ReuseableClass.haveNetworkConnection(this)) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss - dd.MM.yyyy");
-                    String currentDatedTime = sdf.format(new Date());
-
                     if(ReuseableClass.haveNetworkConnection(RegistrationService.this))
-                        new RegistrationTask().execute(deviceId, name, emailId, mobileNo, softwareVersion,
-                                DeviceName, currentDatedTime, lat.toString(), lng.toString());
+                    {
+                        if(!ReuseableClass.getFromPreference("gcm_id", RegistrationService.this).equalsIgnoreCase("")) {
+                            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss - dd.MM.yyyy");
+                            String currentDatedTime = sdf.format(new Date());
+
+                            new RegistrationTask().execute(deviceId, name, emailId, mobileNo, softwareVersion,
+                                    DeviceName, currentDatedTime, lat.toString(), lng.toString(), ReuseableClass.getFromPreference("gcm_id", RegistrationService.this));
+                        }
+                        else {
+                            Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    registeringUser(deviceId, name, emailId, mobileNo, softwareVersion, DeviceName);
+                                }
+                            }, 1000);
+                            Log.d(tag, "No GCM id Found !!");
+                        }
+                    }
                     else
                     {
                         callingAlarmReceiver();
@@ -216,7 +243,7 @@ public class RegistrationService extends Service {
             HttpPost httppost = new HttpPost(ReuseableClass.baseUrl + "register_device.php");
             try
             {
-                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(9);
+                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(10);
                 nameValuePairs.add(new BasicNameValuePair("deviceId", values[0]));
                 nameValuePairs.add(new BasicNameValuePair("name", values[1]));
                 nameValuePairs.add(new BasicNameValuePair("emailId", values[2]));
@@ -226,6 +253,7 @@ public class RegistrationService extends Service {
                 nameValuePairs.add(new BasicNameValuePair("currentDatedTime", values[6]));
                 nameValuePairs.add(new BasicNameValuePair("lat", values[7]));
                 nameValuePairs.add(new BasicNameValuePair("lng", values[8]));
+                nameValuePairs.add(new BasicNameValuePair("gcm_id", values[9]));
 
                 httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
                 HttpResponse response = httpclient.execute(httppost);
@@ -249,8 +277,8 @@ public class RegistrationService extends Service {
             if(!from.equalsIgnoreCase("AlarmReceiver"))
                 callingAlarmReceiver();
 
-            stopSelf();
             stopService(new Intent(RegistrationService.this, CurrentLocationService.class));
+            stopSelf();
         }
     }
 
@@ -296,4 +324,54 @@ public class RegistrationService extends Service {
         //Do a task after certain interval
         //------------------------------------------------------------------------
     }
+
+    //===================================================================================================
+    //Requesting to register the device to GCM
+    //===================================================================================================
+
+    private void getRegisteredIdFromGcm()
+    {
+        mGCMReceiver = new GCMReceiver();
+        mOnRegisteredFilter = new IntentFilter();
+        mOnRegisteredFilter.addAction(GCMConstants.ACTION_ON_REGISTERED);
+
+
+        GCMRegistrar.checkDevice(this);
+        GCMRegistrar.checkManifest(this);
+        final String regId = GCMRegistrar.getRegistrationId(this);
+        if (!regId.equals(""))
+        {
+            ReuseableClass.saveInPreference("gcm_id", regId, this);
+
+        }
+        else
+        {
+            GCMRegistrar.register(this, GCMConstants.SENDER_ID);
+        }
+    }
+
+    //===================================================================================================
+    //END Requesting to register the device to GCM
+    //===================================================================================================
+
+
+    //===================================================================================================
+    //On Gcm response received
+    //===================================================================================================
+
+    private class GCMReceiver extends BroadcastReceiver
+    {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            String gcmId = intent.getStringExtra(GCMConstants.FIELD_REGISTRATION_ID);
+            Log.i(tag, "Device registered to GCM- " + gcmId);
+            ReuseableClass.saveInPreference("gcm_id", gcmId, context);
+        }
+    }
+
+    //===================================================================================================
+    //END On Gcm response received
+    //===================================================================================================
+
 }

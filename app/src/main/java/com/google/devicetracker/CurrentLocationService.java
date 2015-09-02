@@ -69,7 +69,6 @@ public class CurrentLocationService extends Service {
                 Log.d("ServiceForLatLng", "Network Update Released");
             }
         } catch (Exception e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         super.onDestroy();

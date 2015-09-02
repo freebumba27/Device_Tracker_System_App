@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
             ReuseableClass.saveInPreference("email_id", "nothing", MainActivity.this);
             ReuseableClass.saveInPreference("mobile_no", "nothing", MainActivity.this);
             ReuseableClass.saveInPreference("From", "nothing", MainActivity.this);
+            ReuseableClass.saveInPreference("From", "nothing", MainActivity.this);
 
             Intent i = new Intent(this, RegistrationService.class);
             finish();
