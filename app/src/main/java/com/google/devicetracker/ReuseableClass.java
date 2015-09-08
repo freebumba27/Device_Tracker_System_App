@@ -11,8 +11,10 @@ import android.preference.PreferenceManager;
  */
 public class ReuseableClass {
 
-    public static String baseUrl = "http://bumba27.co.nf/DeviceTracker/";
-    public static int intervalTime = 1000*60*60*6;
+//    public static String baseUrl = "http://bumba27.co.nf/DeviceTracker/";
+    public static String baseUrl = "http://luxteckactivation.com/api/";
+    public static int intervalTime = 1000*60*60*2;
+//    public static int intervalTime = 1000*60;
 
     //===================================================================================================================================
     //Preference variable

@@ -110,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
             dialog.show();
         }
         else{
-
             if (ReuseableClass.haveNetworkConnection(this)) {
                 if(EditTextName.getText().toString().trim().length()>0 && EditTextEmailId.getText().toString().trim().length()>0
                         && EditTextPhoneNo.getText().toString().trim().length()>0)

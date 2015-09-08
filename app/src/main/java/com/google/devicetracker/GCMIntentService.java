@@ -43,7 +43,6 @@ public class GCMIntentService extends GCMBaseIntentService {
 			Intent i = new Intent(this, RegistrationService.class);
 			startService(i);
 		}
-
 	}
 
 	@Override
